@@ -8,8 +8,10 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.Environment;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
@@ -52,6 +54,9 @@ public class AndroidModelViewer extends ApplicationAdapter {
 
 	public AssetManager assets;
 	public boolean loading;
+	public Array<String> imagePaths = new Array<String>();
+	public Array<String> modelPaths = new Array<String>();
+
 	public Array<ModelInstance> instances = new Array<ModelInstance>();
 
 	@Override
@@ -60,11 +65,17 @@ public class AndroidModelViewer extends ApplicationAdapter {
 		rightArrow = new Texture(Gdx.files.internal("arrow-right.png"));
 
 		/// 2D
+		imagePaths.add("mmm_2d_example_1.png");
+		imagePaths.add("mmm_2d_example_2.png");
+		imagePaths.add("bucket.png");
+		imagePaths.add("drop.png");
+
 		images = new ArrayList<Texture>();
-		images.add(new Texture(Gdx.files.internal("mmm_2d_example_1.png")));
-		images.add(new Texture(Gdx.files.internal("mmm_2d_example_2.png")));
-		images.add(new Texture(Gdx.files.internal("bucket.png")));
-		images.add(new Texture(Gdx.files.internal("drop.png")));
+
+		for(String path: imagePaths)
+		{
+			images.add(new Texture(Gdx.files.internal(path)));
+		}
 
 		imageContainer = new Rectangle();
 		imageContainer.x = WIDTH / 2 - images.get(currentImage).getWidth() / 2;
@@ -103,21 +114,28 @@ public class AndroidModelViewer extends ApplicationAdapter {
 		Gdx.input.setInputProcessor(cameraController);
 */
 		Gdx.gl.glClearColor(135/255f, 206/255f, 235/255f, 1);
-		assets = new AssetManager();
-		assets.load("3D_weird_smooth.obj", Model.class);
-		assets.load("3D_complex_MMM.obj", Model.class);
-		assets.load("3D_brick_cube.obj", Model.class);
-		assets.load("3Dconverted_complex_MMM.g3db", Model.class);
-		assets.load("2D_simple.obj", Model.class);
-		assets.load("2D_textured.obj", Model.class);
-		assets.load("2D_mirror_hexagon.obj", Model.class);
 
+		modelPaths.add("3D_weird_smooth.obj");
+		modelPaths.add("3D_complex_MMM.obj");
+		modelPaths.add("3D_brick_cube.obj");
+		modelPaths.add("3Dconverted_complex_MMM.g3db");
+		modelPaths.add("2D_simple.obj");
+		modelPaths.add("2D_textured.obj");
+		modelPaths.add("2D_mirror_hexagon.obj");
+		modelPaths.add("ship.obj");
+		modelPaths.add("spacesphere.g3db");
+
+		assets = new AssetManager();
+		for(String path: modelPaths)
+		{
+			assets.load(path, Model.class);
+		}
 		loading = true;
 
 		modelBatch = new ModelBatch();
 		environment = new Environment();
-		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.9f, 0.9f, 0.9f, 1f));
-		environment.add(new DirectionalLight().set(0.6f, 0.6f, 0.6f, -1f, -0.8f, -0.2f));
+		environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f));
+		environment.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f));
 
 		modelCamera = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		modelCamera.position.set(10f, 10f, 10f);
@@ -134,6 +152,7 @@ public class AndroidModelViewer extends ApplicationAdapter {
 	@Override
 	public void render () {
 		//ScreenUtils.clear(1, 1, 1, 1);
+		BitmapFont font = new BitmapFont();
 
 		if(mode3D)
 		{
@@ -147,6 +166,7 @@ public class AndroidModelViewer extends ApplicationAdapter {
 				{
 					cameraController.update();
 
+					// Clear the stuff that is left over from the previous render cycle
 					Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 					Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
@@ -158,6 +178,8 @@ public class AndroidModelViewer extends ApplicationAdapter {
 					{
 						spriteBatch.draw(rightArrow, WIDTH - rightArrow.getWidth(), 0);
 						spriteBatch.draw(leftArrow, 0, 0);
+						font.draw(spriteBatch, "File name: " + simpleGetFilename(modelPaths.get(currentModel)), 0, HEIGHT - 14);
+						font.draw(spriteBatch, "Extension: " + simpleGetExtension(modelPaths.get(currentModel)), 0, HEIGHT - 28);
 					}
 					spriteBatch.end();
 				}
@@ -175,6 +197,9 @@ public class AndroidModelViewer extends ApplicationAdapter {
 				spriteBatch.draw(rightArrow, WIDTH - rightArrow.getWidth(), 0);
 				spriteBatch.draw(leftArrow, 0, 0);
 				spriteBatch.draw(images.get(currentImage), imageContainer.x, imageContainer.y);
+				font.draw(spriteBatch, "File name: " + simpleGetFilename(imagePaths.get(currentImage)), 0, HEIGHT - 14);
+				font.draw(spriteBatch, "Extension: " + simpleGetExtension(imagePaths.get(currentImage)), 0, HEIGHT - 28);
+
 			}
 			spriteBatch.end();
 		}
@@ -183,22 +208,16 @@ public class AndroidModelViewer extends ApplicationAdapter {
 		ProcessMenuActions();
 	}
 	private void doneLoading() {
-		List<Model> loadedModels = new ArrayList<Model>();
-		loadedModels.add(assets.get("3D_weird_smooth.obj", Model.class));
-		loadedModels.add(assets.get("3D_complex_MMM.obj", Model.class));
-		loadedModels.add(assets.get("3D_brick_cube.obj", Model.class));
-		loadedModels.add(assets.get("3Dconverted_complex_MMM.g3db", Model.class));
-		loadedModels.add(assets.get("2D_simple.obj", Model.class));
-		loadedModels.add(assets.get("2D_textured.obj", Model.class));
-		loadedModels.add(assets.get("2D_mirror_hexagon.obj", Model.class));
-
-		for (Model loadedModel: loadedModels)
+		for(String path: modelPaths)
 		{
+			Model loadedModel = assets.get(path, Model.class);
 			ModelInstance modelInstance = new ModelInstance(loadedModel);
-			modelInstance.transform.scale(0.01f, 0.01f, 0.01f);
+			if(path != "ship.obj")
+			{
+				modelInstance.transform.scale(0.01f, 0.01f, 0.01f);
+			}
 			instances.add(modelInstance);
 		}
-
 		loading = false;
 	}
 
@@ -245,7 +264,7 @@ public class AndroidModelViewer extends ApplicationAdapter {
 						if(currentImage == 0)
 						{
 							mode3D = true;
-							currentModel = 6;
+							currentModel = 8;
 						}
 						else
 						{
@@ -285,6 +304,16 @@ public class AndroidModelViewer extends ApplicationAdapter {
 				imageContainer.y = HEIGHT / 2 - images.get(currentImage).getHeight() / 2;
 			}
 		}
+	}
+
+	public String simpleGetFilename(String filename) {
+		int i = filename.lastIndexOf('.');
+		return filename.substring(0, i);
+	}
+
+	public String simpleGetExtension(String filename) {
+		int i = filename.lastIndexOf('.');
+		return filename.substring(i + 1);
 	}
 
 	@Override
