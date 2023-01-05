@@ -207,7 +207,7 @@ fun AudioPlayerRecorder() {
                 mediaPlayer = MediaPlayer()
                 mediaPlayer?.setDataSource(file.absolutePath)
                 mediaPlayer?.prepare()
-                mediaPlayer?.setVolume(0.5f, 0.5f)
+                mediaPlayer?.setVolume(1f, 1f)
                 mediaPlayer?.start()
                 isPlayingAudio = true;
             }, modifier = Modifier
